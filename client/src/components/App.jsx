@@ -9,6 +9,10 @@ import Body from './Body.jsx';
 import Dropzone from 'react-dropzone';
 import upload from 'superagent';
 
+import EditProfile from './EditProfile.jsx';
+import Profile from './Profile.jsx';
+
+
 // The main component of the App. Renders the core functionality of the project.
 export default class App extends React.Component {
   constructor(props) {
@@ -23,7 +27,7 @@ export default class App extends React.Component {
       // Default message informs the user to select a workspace
       messages: [
         {
-          text: 'Welcome to slackk-casa! Please select or create a workspace!',
+          text: 'Welcome to slick-slack! Please select or create a workspace!',
           username: 'Slack-bot',
           id: 0,
           createdAt: new Date(),
@@ -35,6 +39,12 @@ export default class App extends React.Component {
       query: '',
       currentWorkSpaceId: 0,
       currentWorkSpaceName: '',
+      editClicked: false,
+      userData:[],
+      clickedUsersData: [],
+      availableOrAway: 'Available',
+      profileClicked: false,
+      clickedUsersStatus: ''
     };
     this.onDrop = this.onDrop.bind(this);
     this.toggler = this.toggler.bind(this);
@@ -131,30 +141,96 @@ export default class App extends React.Component {
   changeCurrentWorkSpace(id, name) {
     this.setState({ currentWorkSpaceId: id, currentWorkSpaceName: name });
   }
+
   // renders nav bar, body(which contains all message components other than input), and message input
+
+
+
+handleEditClick(event) {
+  //console.log('I WAS CLICKED!')
+   this.setState({editClicked: !this.state.editClicked});
+   this.getUserData(this.props.location.state.username);
+}
+
+handleClickStatus(event) {
+  this.setState({availableOrAway: event.target.innerText});
+  
+  fetch('/usersStatus', {
+    method: 'POST',
+    body: JSON.stringify({username: this.state.clickedUsersData.username, status: event.target.innerText }),
+    headers: {'content-type': 'application/json'},
+  })
+  
+}
+
+getUserData() {
+  fetch('/users', {
+    method: 'POST',
+    body: JSON.stringify({username: this.props.location.state.username }),
+    headers: {'content-type': 'application/json'},
+  })
+    .then(resp => resp.json())
+    .then((data) => this.setState({userData: data}))
+    //.then(() => console.log("I GOT DATA!", this.state.userData))
+    .catch(console.error);
+}
+
+
+getClickedUsersData(username) {
+  fetch('/clickedUser', {
+    method: 'POST',
+    body: JSON.stringify({username: username}),
+    headers: {'content-type': 'application/json'},
+  })
+    .then(resp => resp.json())
+    .then((data) => this.setState({clickedUsersData: data}))
+    .then(() => this.setState({profileClicked: !this.state.profileClicked}))
+    //.then(() => console.log("I GOT DATA!", this.state.clickedUsersData))
+    .then(() => this.setState({clickedUsersStatus: this.state.clickedUsersData.status}))
+    .catch(console.error);
+}
+
+
+  //renders nav bar, body(which contains all message components other than input), and message input
   render() {
     let {
-      messages, query, workSpaces, currentWorkSpaceId, currentWorkSpaceName,
+      messages, query, workSpaces, currentWorkSpaceId, currentWorkSpaceName, editProfile, userData, clickedUsersData
     } = this.state;
     let typing;
     const timer = 5000;
     return (
       <div className="app-container">
-        <NavBar currentWorkSpaceName={currentWorkSpaceName} username={this.props.location.state.username} />
+        <NavBar currentWorkSpaceName={currentWorkSpaceName} changeStatus={this.handleClickStatus.bind(this)} username={this.props.location.state.username} handleEditClick={this.handleEditClick.bind(this)} userData={userData} userStatus={this.state.availableOrAway}/>
         <ProgressBar progress={this.state.progress} progressValue={this.state.progressValue} />
+        <div className="edit-profile">
+          {this.state.editClicked ? (<EditProfile handleEditClick={this.handleEditClick.bind(this)} userData={userData} userStatus={this.state.availableOrAway}/> ) : (null)
+          
+          }
+        
+      </div>
+
+      <div className="edit-profile">
+          {this.state.profileClicked ? (<Profile clickedUsersData={clickedUsersData} clickedUsersStatus={this.state.clickedUsersStatus}/> ) : (null)
+          
+          }
+        
+      </div>
+
+
         <Body
           messages={messages}
           workSpaces={workSpaces}
           loadWorkSpaces={() => this.loadWorkSpaces()}
           changeCurrentWorkSpace={(id, name) => this.changeCurrentWorkSpace(id, name)}
           currentWorkSpaceId={currentWorkSpaceId}
+          getClickedUsersData={(username) => this.getClickedUsersData(username)}
         />
         <div className="messages-input">
           <div className="image-input">
             <Button
               style={{
- height: '60px', width: '60px', color: 'black', 'background-color': '#ffffff', border: '1px solid #ced4da',
-}}
+              height: '60px', width: '60px', color: 'black', 'background-color': '#ffffff', border: '1px solid #ced4da',
+              }}
               id="Popover2"
               onClick={this.toggler}
             >
@@ -186,8 +262,9 @@ export default class App extends React.Component {
               // onKeyUp={typing = setTimeout(() => { this.setState({ renderTyping: false }); }), timer}
             />
           </div>
-        </div>
       </div>
+    </div>
+      
     );
   }
 }

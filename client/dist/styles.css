@@ -1,11 +1,11 @@
-.app-container {
+/*.app-container {
   position: fixed;
   top: 0px;
   bottom: 0px;
   left: 0px;
   right: 0px;
 }
-
+*/
 /* left side  */
 .side-bar-col {
   margin-bottom: -100%;
@@ -25,6 +25,12 @@
   overflow: scroll;
   display: flex;
   flex-direction: column-reverse;
+}
+
+
+.edit-profile {
+  margin-left: 80%;
+  position: absolute;
 }
 
 /* send message div container */
